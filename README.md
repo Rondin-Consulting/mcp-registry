@@ -1,6 +1,6 @@
 # MCP Registry
 
-A minimal MCP registry allowing only the Atlassian MCP server, for use with GitHub Copilot enterprise allowlisting.
+A minimal MCP registry compliant with the [v0.1 MCP Registry API spec](https://registry.modelcontextprotocol.io/docs), served via GitHub Pages. Currently allowlists the Atlassian MCP server.
 
 ## Setup
 
@@ -11,6 +11,19 @@ A minimal MCP registry allowing only the Atlassian MCP server, for use with GitH
 5. After a minute or two, your registry will be live at:
    `https://<your-org>.github.io/<repo-name>`
 
+## API Endpoints
+
+All endpoints return JSON (served as `text/html` — a GitHub Pages limitation). Requests without a trailing slash redirect automatically.
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /v0.1/servers/` | List all servers (ServerListResponse) |
+| `GET /v0.1/servers/{name}/versions/` | List versions of a server |
+| `GET /v0.1/servers/{name}/versions/{version}/` | Get a specific version (ServerResponse) |
+| `GET /v0.1/servers/{name}/versions/latest/` | Get the latest version |
+
+Where `{name}` uses forward slashes as path separators (e.g. `com.atlassian/mcp`).
+
 ## Connecting to GitHub Copilot
 
 Once your Pages site is live:
@@ -20,8 +33,59 @@ Once your Pages site is live:
 3. Paste your Pages URL into the **MCP Registry URL** field and click **Save**
 4. Set **Restrict MCP access to registry servers** to **Registry only**
 
-## Adding or removing MCP servers
+## File Structure
 
-To add another server, add an entry to `v0.1/servers/index.json` and create the corresponding version files under `v0.1/servers/<name>/versions/`.
+```
+v0.1/servers/
+  index.html                          ← GET /v0.1/servers/
+  {reverse-dns}/{id}/
+    versions/
+      index.html                      ← GET /v0.1/servers/{name}/versions/
+      {version}/
+        index.html                    ← GET /v0.1/servers/{name}/versions/{version}/
+      latest/
+        index.html                    ← GET /v0.1/servers/{name}/versions/latest/
+```
 
-To remove the Atlassian server (or replace it), edit `v0.1/servers/index.json` and delete or update the relevant version folders.
+## JSON Schema
+
+Responses follow the [MCP Registry v0.1 spec](https://registry.modelcontextprotocol.io/openapi.yaml):
+
+**ServerListResponse** (`/v0.1/servers/`):
+```json
+{
+  "servers": [{ "server": { ... }, "_meta": { ... } }],
+  "metadata": { "count": 1 }
+}
+```
+
+**ServerResponse** (`/v0.1/servers/{name}/versions/{version}/`):
+```json
+{
+  "server": {
+    "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+    "name": "com.example/server-id",
+    "title": "Display Name",
+    "description": "...",
+    "version": "1.0.0",
+    "remotes": [{ "type": "streamable-http", "url": "https://..." }]
+  },
+  "_meta": {
+    "io.modelcontextprotocol.registry/official": {
+      "status": "active",
+      "statusChangedAt": "...",
+      "publishedAt": "...",
+      "updatedAt": "...",
+      "isLatest": true
+    }
+  }
+}
+```
+
+## Adding a Server
+
+1. Create the directory `v0.1/servers/{reverse-dns}/{id}/versions/`
+2. Add `index.html` (versions list), `{version}/index.html`, and `latest/index.html`
+3. Add an entry to `v0.1/servers/index.html` (increment `metadata.count`)
+
+The server `name` field must be in reverse-DNS format with one slash (e.g. `com.example/my-server`).

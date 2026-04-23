@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "WebSearch",
+      "WebFetch(domain:registry.modelcontextprotocol.io)",
+      "WebFetch(domain:docs.github.com)",
+      "WebFetch(domain:nordicapis.com)"
+    ]
+  }
+}
